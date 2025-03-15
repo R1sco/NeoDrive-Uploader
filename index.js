@@ -78,17 +78,36 @@ async function createFileUpload(accessToken, filePath, key) {
     try {
         const fileSize = fs.statSync(filePath).size;
         const filename = path.basename(filePath);
+        
+        // Log the request details for debugging
+        console.log('Creating upload for:', {
+            fileSize,
+            filename,
+            hasKey: !!key,
+            hasToken: !!accessToken
+        });
+
         const metadata = {
             filename: Buffer.from(filename).toString('base64'),
-            key: Buffer.from(key).toString('base64'),
+            key: Buffer.from(key).toString('base64')
         };
 
-        // Add parent ID only if it exists in config
+        // Only add parent if it's configured
         if (process.env.PARENT_ID) {
             metadata.parent = Buffer.from(process.env.PARENT_ID).toString('base64');
         }
 
-        const response = await fetch("https://drive-api.neova.io/files/upload", {
+        // Log the full request for debugging
+        console.log('Request headers:', {
+            'Authorization': `Bearer ${accessToken.substring(0, 10)}...`,
+            'Tus-Resumable': '1.0.0',
+            'Upload-Length': fileSize.toString(),
+            'Upload-Metadata': Object.entries(metadata)
+                .map(([key, value]) => `${key} ${value}`)
+                .join(',')
+        });
+
+        const response = await fetch(`${API_URL}/files/upload`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -101,8 +120,13 @@ async function createFileUpload(accessToken, filePath, key) {
             }
         });
 
+        // Log the response details
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
         if (response.status !== 201) {
-            throw new Error(`Failed to create upload: ${response.status}`);
+            const errorBody = await response.text();
+            throw new Error(`Failed to create upload: ${response.status}\nResponse: ${errorBody}`);
         }
 
         const location = response.headers.get('Location');
@@ -115,6 +139,12 @@ async function createFileUpload(accessToken, filePath, key) {
         return location;
     } catch (error) {
         console.error('Error creating file upload:', error);
+        // Log more details about the error
+        if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response headers:', error.response.headers);
+            console.error('Response body:', await error.response.text());
+        }
         return null;
     }
 }
