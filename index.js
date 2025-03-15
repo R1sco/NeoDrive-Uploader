@@ -79,54 +79,30 @@ async function createFileUpload(accessToken, filePath, key) {
         const fileSize = fs.statSync(filePath).size;
         const filename = path.basename(filePath);
         
-        // Log the request details for debugging
-        console.log('Creating upload for:', {
-            fileSize,
-            filename,
-            hasKey: !!key,
-            hasToken: !!accessToken
-        });
-
         const metadata = {
-            filename: Buffer.from(filename).toString('base64'),
-            key: Buffer.from(key).toString('base64')
+            filename: Buffer.from(filename, 'utf-8').toString('base64'),
+            key: Buffer.from(String(key), 'utf-8').toString('base64'),
+            parent: Buffer.from('b2cd331c-bde3-497e-9b5b-6b810b6c2702', 'utf-8').toString('base64')
         };
 
-        // Only add parent if it's configured
-        if (process.env.PARENT_ID) {
-            metadata.parent = Buffer.from(process.env.PARENT_ID).toString('base64');
-        }
+        const metadataString = Object.entries(metadata)
+            .map(([key, value]) => `${key} ${value}`)
+            .join(',');
 
-        // Log the full request for debugging
-        console.log('Request headers:', {
-            'Authorization': `Bearer ${accessToken.substring(0, 10)}...`,
+        const headers = {
             'Tus-Resumable': '1.0.0',
-            'Upload-Length': fileSize.toString(),
-            'Upload-Metadata': Object.entries(metadata)
-                .map(([key, value]) => `${key} ${value}`)
-                .join(',')
-        });
+            'Upload-Length': String(fileSize),
+            'Upload-Metadata': metadataString,
+            'Authorization': `Bearer ${accessToken}`
+        };
 
         const response = await fetch(`${API_URL}/files/upload`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Tus-Resumable': '1.0.0',
-                'Upload-Length': fileSize.toString(),
-                'Upload-Metadata': Object.entries(metadata)
-                    .map(([key, value]) => `${key} ${value}`)
-                    .join(','),
-                'Content-Length': '0'
-            }
+            headers: headers
         });
 
-        // Log the response details
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
         if (response.status !== 201) {
-            const errorBody = await response.text();
-            throw new Error(`Failed to create upload: ${response.status}\nResponse: ${errorBody}`);
+            throw new Error(`Failed to create upload: ${response.status}`);
         }
 
         const location = response.headers.get('Location');
@@ -134,17 +110,9 @@ async function createFileUpload(accessToken, filePath, key) {
             throw new Error('No upload location returned');
         }
 
-        console.log('Upload creation successful');
-        console.log('Got upload URL:', location);
         return location;
     } catch (error) {
-        console.error('Error creating file upload:', error);
-        // Log more details about the error
-        if (error.response) {
-            console.error('Response status:', error.response.status);
-            console.error('Response headers:', error.response.headers);
-            console.error('Response body:', await error.response.text());
-        }
+        console.error('Error creating file upload:', error.message);
         return null;
     }
 }
