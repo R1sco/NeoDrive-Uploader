@@ -1,0 +1,23 @@
+# Sensitive files
+config.json
+token.txt
+*.key
+*.pem
+*.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db 

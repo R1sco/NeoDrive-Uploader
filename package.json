@@ -1,0 +1,20 @@
+{
+  "name": "file-upload-utility",
+  "version": "1.0.0",
+  "description": "A Node.js utility for uploading files with chunked upload support",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.0"
+  },
+  "keywords": [
+    "file-upload",
+    "chunked-upload",
+    "node"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+} 

@@ -1,0 +1,8 @@
+{
+  "api_url": "https://drive-api.neova.io",
+  "parent_id": "your_parent_folder_id",
+  "token": {
+    "access_token": "your_access_token",
+    "refresh_token": "your_refresh_token"
+  }
+} 
